@@ -82,7 +82,7 @@ DeliveryResult PointToPointRouterImpl::generatePointToPointRoute(
 		for (int i = 0; i < segs.size(); i++) {
 			double *distfrom = (visited.find(segs[i].end));
 			double distBtwn = distanceEarthMiles(checking, segs[i].end);
-			if (minDistToEnd == -1 || *(visited.find(checking)) + distBtwn < minDistToEnd) {
+			if (minDistToEnd == -1 || *(visited.find(checking)) + distBtwn + distanceEarthMiles(segs[i].end, end) < minDistToEnd) {
 				if (checking == end)
 					minDistToEnd = *(visited.find(checking));
 
