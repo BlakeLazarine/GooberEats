@@ -32,6 +32,7 @@ DeliveryResult PointToPointRouterImpl::generatePointToPointRoute(
         list<StreetSegment>& route,
         double& totalDistanceTravelled) const
 {
+	
 	/*
 	okay so here is my plan for how im going to do thins
 	ill make a hashmap for places ive been which includes the shortest amount of distance has been yet required to reach the end.
@@ -66,40 +67,58 @@ DeliveryResult PointToPointRouterImpl::generatePointToPointRoute(
 	I should probably look into A* to see if this is any simpler/more efficient.
 	*/
 	ExpandableHashMap<GeoCoord, double> visited;
-	GeoCoord checking = start;
+	GeoCoord checking;
 	queue<GeoCoord> toCheck;
-	visited.associate(start, 0);
+	toCheck.push(start);
+	double tempDist = 0;
+	visited.associate(start, tempDist);
 	double minDistToEnd = -1;
 	vector<StreetSegment> placeholderSegs;
 	if (!m_streetMap->getSegmentsThatStartWith(start, placeholderSegs) || !m_streetMap->getSegmentsThatStartWith(end, placeholderSegs))
 		return BAD_COORD;
 
-	do {
-		
+	while (toCheck.size() > 0) {
+		checking = toCheck.front();
+		toCheck.pop();
 		vector<StreetSegment> segs;
 		m_streetMap->getSegmentsThatStartWith(checking, segs);
-
+		
+		const double* currDist = visited.find(checking);
+		
+		//cerr << "is this start? " << (checking == start) << " currdist pointer address" << currDist << endl;
 		for (int i = 0; i < segs.size(); i++) {
-			double *distfrom = (visited.find(segs[i].end));
+			
+			const double *distfrom = visited.find(segs[i].end);
 			double distBtwn = distanceEarthMiles(checking, segs[i].end);
-			if (minDistToEnd == -1 || *(visited.find(checking)) + distBtwn + distanceEarthMiles(segs[i].end, end) < minDistToEnd) {
-				if (checking == end)
-					minDistToEnd = *(visited.find(checking));
+			
+			if (minDistToEnd == -1 || *currDist + distBtwn + distanceEarthMiles(segs[i].end, end) < minDistToEnd) {
+				
+				if (checking == end) {
+					//cerr << "wus poppin" << endl;
+					minDistToEnd = *currDist;
+				}
+				if (!distfrom || *currDist + distBtwn < *distfrom) {
+					
+					toCheck.push(segs[i].end);
+					double newDist = *currDist + distBtwn;
+					visited.associate(segs[i].end, newDist);
 
-				if (!distfrom) {
-					toCheck.push(segs[i].end);
-					visited.associate(checking, *(visited.find(checking)) + distBtwn);
+					
+					//cerr << "association "<< initialSize <<" at " << visited.find(segs[i].end) << endl;
+					
 				}
-				else if (*(visited.find(checking)) + distBtwn < *distfrom) {
-					*distfrom = *(visited.find(checking)) + distBtwn;
-					toCheck.push(segs[i].end);
-				}
+				//else if (*currDist + distBtwn < *distfrom) {
+					//visited.associate(checking, *currDist + distBtwn);
+					//*distfrom = *(visited.find(checking)) + distBtwn;
+			//		toCheck.push(segs[i].end);
+		//		}
+				
 			}
 			
-			checking = toCheck.front();
-			toCheck.pop();	
+			
 		}
-	} while (toCheck.size() > 0);
+	}
+	
 	if (minDistToEnd == -1)
 		return NO_ROUTE;
 

@@ -54,9 +54,24 @@ bool StreetMapImpl::load(string mapFile)
 			parser.ignore(10000, '\n');
 
 			StreetSegment forwards(startCoord, endCoord, streetName);
+			vector<StreetSegment>* existingStarts = segments.find(startCoord);
+			if (existingStarts)
+				existingStarts->push_back(forwards);
+			else {
+				vector<StreetSegment> newVec;
+				newVec.push_back(forwards);
+				segments.associate(startCoord, newVec);
+			}
+				
 			StreetSegment backwards(endCoord, startCoord, streetName);
-			vector<StreetSegment> segs;
-			segments.associate(endCoord, segs);
+			vector<StreetSegment>* existingEnds = segments.find(endCoord);
+			if (existingEnds)
+				existingEnds->push_back(backwards);
+			else {
+				vector<StreetSegment> newVec;
+				newVec.push_back(backwards);
+				segments.associate(endCoord, newVec);
+			}
 		}
 
 	}
@@ -67,6 +82,7 @@ bool StreetMapImpl::load(string mapFile)
 bool StreetMapImpl::getSegmentsThatStartWith(const GeoCoord& gc, vector<StreetSegment>& segs) const
 {
 	if (segments.find(gc)) {
+		
 		segs = *(segments.find(gc));
 		return true;
 	}
